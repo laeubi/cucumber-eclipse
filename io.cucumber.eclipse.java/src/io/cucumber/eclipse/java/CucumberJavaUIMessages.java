@@ -31,6 +31,21 @@ public class CucumberJavaUIMessages extends NLS {
 	public static String CucumberJavaPreferencesPage__Could_not_open_package_selection_dialog_for_step_filters;
 	public static String CucumberJavaPreferencesPage__title;
 	public static String CucumberJavaPreferencesPage__description;
+	
+	// CucumberProjectPropertyPage messages
+	public static String CucumberProjectPropertyPage_title;
+	public static String CucumberProjectPropertyPage_description;
+	public static String CucumberProjectPropertyPage_gluePackages_title;
+	public static String CucumberProjectPropertyPage_gluePackages_description;
+	public static String CucumberProjectPropertyPage_addButton;
+	public static String CucumberProjectPropertyPage_removeButton;
+	public static String CucumberProjectPropertyPage_scanning_title;
+	public static String CucumberProjectPropertyPage_scanning_description;
+	public static String CucumberProjectPropertyPage_scanOnProjectOpen;
+	public static String CucumberProjectPropertyPage_scanOnProjectOpen_tooltip;
+	public static String CucumberProjectPropertyPage_scanOnFeatureOpen;
+	public static String CucumberProjectPropertyPage_selectPackage_title;
+	public static String CucumberProjectPropertyPage_selectPackage_message;
 
 	static {
 		// load message values from bundle file
