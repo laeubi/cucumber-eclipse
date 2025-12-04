@@ -33,11 +33,16 @@ import org.eclipse.ui.dialogs.ElementListSelectionDialog;
 import org.eclipse.ui.dialogs.PropertyPage;
 import org.osgi.service.prefs.BackingStoreException;
 
+import io.cucumber.eclipse.java.Activator;
 import io.cucumber.eclipse.java.CucumberJavaUIMessages;
 
 /**
  * Project property page for Cucumber configuration.
  * This page allows users to configure cucumber glue options and step definition scanning preferences.
+ * 
+ * Note: This class uses JavaPluginImages from internal JDT API to display package icons.
+ * This is necessary as there is no public API for obtaining the standard package icon,
+ * and this pattern is already used elsewhere in the codebase (e.g., GlueCodePackageTable).
  */
 @SuppressWarnings("restriction")
 public class CucumberProjectPropertyPage extends PropertyPage {
@@ -205,7 +210,7 @@ public class CucumberProjectPropertyPage extends PropertyPage {
 				}
 			}
 		} catch (JavaModelException e) {
-			// Log error
+			Activator.error("Failed to load packages for project: " + project.getName(), e);
 		}
 	}
 
@@ -268,7 +273,7 @@ public class CucumberProjectPropertyPage extends PropertyPage {
 			try {
 				node.flush();
 			} catch (BackingStoreException e) {
-				// Log error
+				Activator.error("Failed to save Cucumber project preferences for: " + getProject().getName(), e);
 			}
 		}
 		return super.performOk();
