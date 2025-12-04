@@ -47,7 +47,7 @@ public final class CucumberProjectPropertyPreferences {
 		return Arrays.stream(packagesStr.split(","))
 				.map(String::trim)
 				.filter(s -> !s.isEmpty())
-				.collect(Collectors.toList());
+				.collect(Collectors.toUnmodifiableList());
 	}
 
 	/**

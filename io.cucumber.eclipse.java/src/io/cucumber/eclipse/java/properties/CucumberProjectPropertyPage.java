@@ -257,14 +257,7 @@ public class CucumberProjectPropertyPage extends PropertyPage {
 		IEclipsePreferences node = getPreferencesNode();
 		if (node != null) {
 			// Save glue packages
-			StringBuilder sb = new StringBuilder();
-			for (int i = 0; i < gluePackages.size(); i++) {
-				if (i > 0) {
-					sb.append(",");
-				}
-				sb.append(gluePackages.get(i));
-			}
-			node.put(CucumberProjectPropertyPreferences.KEY_GLUE_PACKAGES, sb.toString());
+			node.put(CucumberProjectPropertyPreferences.KEY_GLUE_PACKAGES, String.join(",", gluePackages));
 
 			// Save scanning preference
 			node.putBoolean(CucumberProjectPropertyPreferences.KEY_SCAN_ON_PROJECT_OPEN,
