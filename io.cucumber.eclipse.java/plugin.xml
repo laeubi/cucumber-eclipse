@@ -64,7 +64,18 @@
     <extension
          point="org.eclipse.ui.propertyPages">
       <page
-            category="cucumber.eclipse.editor.properties.main"
+            class="io.cucumber.eclipse.java.properties.CucumberProjectPropertyPage"
+            icon="icons/cukes.gif"
+            id="io.cucumber.eclipse.java.properties.cucumberProjectPropertyPage"
+            name="Cucumber">
+         <enabledWhen>
+            <adapt type="org.eclipse.core.resources.IProject">
+               <test property="org.eclipse.core.resources.projectNature" value="org.eclipse.jdt.core.javanature"/>
+            </adapt>
+         </enabledWhen>
+      </page>
+      <page
+            category="io.cucumber.eclipse.java.properties.cucumberProjectPropertyPage"
             class="io.cucumber.eclipse.java.properties.JavaBackendPropertyPage"
             id="cucumber.eclipse.backends.java.properties.samplePropertyPage"
             name="Java Backend">
