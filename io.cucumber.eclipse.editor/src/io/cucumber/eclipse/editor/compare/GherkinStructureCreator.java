@@ -98,23 +98,21 @@ public class GherkinStructureCreator implements IStructureCreator {
 		IDocument document = new Document(content);
 		GherkinEditorDocument gherkinDoc = GherkinEditorDocument.get(document);
 
-		// Create root node using DocumentRangeNode constructor
-		GherkinNode root = new GherkinNode(null, 0, "Feature File", document, 0, content.length(), 
-				GherkinNode.FEATURE_FILE);
-
 		Optional<Feature> featureOpt = gherkinDoc.getFeature();
 		if (!featureOpt.isPresent()) {
-			return root;
+			// Return an empty root if no feature found
+			return new GherkinNode(null, 0, "Feature File", document, 0, content.length(), 
+					GherkinNode.FEATURE_FILE);
 		}
 
 		Feature feature = featureOpt.get();
 
-		// Create feature node with type prefix
+		// Create feature node as the root - no wrapper needed
 		int featureStart = getOffset(document, feature.getLocation());
 		int featureEnd = content.length();
 		String featureName = feature.getName() != null && !feature.getName().isEmpty() ? feature.getName() : "Unnamed";
 		String featureId = "Feature: " + featureName;
-		GherkinNode featureNode = new GherkinNode(root, 1, featureId, document, 
+		GherkinNode featureNode = new GherkinNode(null, 1, featureId, document, 
 				featureStart, featureEnd - featureStart, GherkinNode.FEATURE);
 
 		// Process feature children (Background, Scenarios, Rules)
@@ -122,7 +120,7 @@ public class GherkinStructureCreator implements IStructureCreator {
 			processFeatureChild(featureNode, child, document);
 		}
 
-		return root;
+		return featureNode;
 	}
 
 	/**
@@ -139,9 +137,13 @@ public class GherkinStructureCreator implements IStructureCreator {
 			// Include line number to make ID unique
 			int line = bg.getLocation().getLine().intValue();
 			String id = "Background: " + name + " [line " + line + "]";
-			new GherkinNode(parent, 2, id, document, start, end - start, GherkinNode.BACKGROUND);
+			GherkinNode bgNode = new GherkinNode(parent, 2, id, document, start, end - start, 
+					GherkinNode.BACKGROUND);
 
-			// Don't add steps as children for now to simplify the tree
+			// Add steps as children
+			for (Step step : bg.getSteps()) {
+				addStepNode(bgNode, step, document);
+			}
 		}
 
 		// Scenario
@@ -157,6 +159,11 @@ public class GherkinStructureCreator implements IStructureCreator {
 			String id = keyword + ": " + name + " [line " + line + "]";
 			GherkinNode scenarioNode = new GherkinNode(parent, 3, id, document, start, end - start, 
 					GherkinNode.SCENARIO);
+
+			// Add steps as children
+			for (Step step : scenario.getSteps()) {
+				addStepNode(scenarioNode, step, document);
+			}
 
 			// Add examples if present
 			for (Examples examples : scenario.getExamples()) {
@@ -198,7 +205,13 @@ public class GherkinStructureCreator implements IStructureCreator {
 			// Include line number to make ID unique
 			int line = bg.getLocation().getLine().intValue();
 			String id = "Background: " + name + " [line " + line + "]";
-			new GherkinNode(parent, 2, id, document, start, end - start, GherkinNode.BACKGROUND);
+			GherkinNode bgNode = new GherkinNode(parent, 2, id, document, start, end - start, 
+					GherkinNode.BACKGROUND);
+
+			// Add steps as children
+			for (Step step : bg.getSteps()) {
+				addStepNode(bgNode, step, document);
+			}
 		}
 
 		// Scenario
@@ -214,6 +227,11 @@ public class GherkinStructureCreator implements IStructureCreator {
 			String id = keyword + ": " + name + " [line " + line + "]";
 			GherkinNode scenarioNode = new GherkinNode(parent, 3, id, document, start, end - start, 
 					GherkinNode.SCENARIO);
+
+			// Add steps as children
+			for (Step step : scenario.getSteps()) {
+				addStepNode(scenarioNode, step, document);
+			}
 
 			// Add examples if present
 			for (Examples examples : scenario.getExamples()) {
@@ -233,6 +251,19 @@ public class GherkinStructureCreator implements IStructureCreator {
 		int line = examples.getLocation().getLine().intValue();
 		String id = "Examples: " + name + " [line " + line + "]";
 		new GherkinNode(parent, 5, id, document, start, end - start, GherkinNode.EXAMPLES);
+	}
+
+	/**
+	 * Add a step node
+	 */
+	private void addStepNode(GherkinNode parent, Step step, IDocument document) {
+		int start = getOffset(document, step.getLocation());
+		int end = getEndOffsetForStep(document, step, document);
+		String stepText = step.getKeyword() + step.getText();
+		// Include line number to make ID unique
+		int line = step.getLocation().getLine().intValue();
+		String id = stepText + " [line " + line + "]";
+		new GherkinNode(parent, 6, id, document, start, end - start, GherkinNode.STEP);
 	}
 
 	/**
