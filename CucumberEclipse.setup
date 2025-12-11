@@ -39,22 +39,6 @@
     <description>Set the heap space needed to work with the projects of ${scope.project.label}</description>
   </setupTask>
   <setupTask
-      xsi:type="setup:ResourceCreationTask"
-      excludedTriggers="STARTUP MANUAL"
-      targetURL="${workspace.location|uri}/.metadata/.plugins/org.eclipse.jdt.core/variablesAndContainers.dat"
-      encoding="UTF-8">
-    <description>Initialize JDT's package explorer to show working sets as its root objects</description>
-    <content>
-      PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjxwYWNrYWdlRXhwbG9yZXJDb250ZW50Pgo8
-      cmVzb3VyY2U+CjxwYXRoPi88L3BhdGg+CjwvcmVzb3VyY2U+CjwvcGFja2FnZUV4cGxvcmVyQ29udGVudD4K
-    </content>
-  </setupTask>
-  <setupTask
-      xsi:type="setup:VariableTask"
-      name="eclipse.target.platform"
-      defaultValue="None"
-      storageURI="scope://Workspace"/>
-  <setupTask
       xsi:type="setup.p2:P2DirectorTask">
     <requirement
         name="org.eclipse.pde.feature.group"/>
@@ -67,7 +51,7 @@
   <setupTask
       xsi:type="git:GitCloneTask"
       id="git.clone.cucumber.eclipse"
-      remoteURI="laeubi/cucumber-eclipse">
+      remoteURI="cucumber/cucumber-eclipse">
     <annotation
         source="http://www.eclipse.org/oomph/setup/InducedChoices">
       <detail
@@ -88,48 +72,13 @@
   <setupTask
       xsi:type="setup.targlets:TargletTask">
     <targlet
-        name="Cucumber Eclipse Target Platform"
-        activeRepositoryList="${eclipse.target.platform}">
+        name="Cucumber Eclipse Target Platform">
       <requirement
           name="*"/>
       <sourceLocator
           rootFolder="${git.clone.cucumber.eclipse.location}"
-          locateNestedProjects="true">
-        <predicate
-            xsi:type="predicates:NotPredicate">
-          <operand
-              xsi:type="predicates:NamePredicate"
-              pattern=".*\.tests"/>
-        </predicate>
-      </sourceLocator>
-      <repositoryList
-          name="2025-09">
-        <repository
-            url="http://download.eclipse.org/releases/2025-09"/>
-        <repository
-            url="https://download.eclipse.org/technology/m2e/releases/latest/"/>
-      </repositoryList>
-      <repositoryList
-          name="2024-12">
-        <repository
-            url="http://download.eclipse.org/releases/2024-12"/>
-        <repository
-            url="https://download.eclipse.org/technology/m2e/releases/latest/"/>
-      </repositoryList>
-      <repositoryList
-          name="2024-09">
-        <repository
-            url="http://download.eclipse.org/releases/2024-09"/>
-        <repository
-            url="https://download.eclipse.org/technology/m2e/releases/latest/"/>
-      </repositoryList>
-      <repositoryList
-          name="2024-06">
-        <repository
-            url="http://download.eclipse.org/releases/2024-06"/>
-        <repository
-            url="https://download.eclipse.org/technology/m2e/releases/latest/"/>
-      </repositoryList>
+          locateNestedProjects="true"/>
+      <targetDefinition>${git.clone.cucumber.eclipse.location}/io.cucumber.eclipse.targetdefinition/cucumber.eclipse.targetdefinition.target</targetDefinition>
     </targlet>
   </setupTask>
   <setupTask
@@ -154,11 +103,6 @@
   </setupTask>
   <stream name="main"
       label="Main">
-    <setupTask
-        xsi:type="setup:VariableTask"
-        name="eclipse.target.platform"
-        value="2025-09"
-        storageURI="scope://Workspace"/>
     <description>The main development branch</description>
   </stream>
   <logicalProjectContainer

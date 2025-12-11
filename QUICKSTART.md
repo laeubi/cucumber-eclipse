@@ -7,12 +7,12 @@ This is a quick reference for getting started with Cucumber Eclipse development.
 ### Using Oomph (15 minutes)
 1. Download [Eclipse Installer](https://www.eclipse.org/downloads/packages/installer)
 2. Switch to Advanced Mode (☰ menu)
-3. Add setup URL: `https://raw.githubusercontent.com/laeubi/cucumber-eclipse/main/CucumberEclipse.setup`
+3. Add setup URL: `https://raw.githubusercontent.com/cucumber/cucumber-eclipse/main/CucumberEclipse.setup`
 4. Follow wizard → Done!
 
 ### Manual Setup (30 minutes)
 ```bash
-git clone https://github.com/laeubi/cucumber-eclipse.git
+git clone https://github.com/cucumber/cucumber-eclipse.git
 # Import in Eclipse → File → Import → Existing Projects
 # Set target platform: io.cucumber.eclipse.targetdefinition/cucumber.eclipse.targetdefinition.target
 # Project → Clean

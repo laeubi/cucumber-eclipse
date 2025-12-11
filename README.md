@@ -119,7 +119,7 @@ To manage these features:
    - Select "Github Projects" as the catalog
    - Paste the setup file URL:
      ```
-     https://raw.githubusercontent.com/laeubi/cucumber-eclipse/main/CucumberEclipse.setup
+     https://raw.githubusercontent.com/cucumber/cucumber-eclipse/main/CucumberEclipse.setup
      ```
    - Or use a local file if you've already cloned the repository:
      ```
@@ -156,7 +156,7 @@ If you prefer to set up the environment manually:
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/laeubi/cucumber-eclipse.git
+   git clone https://github.com/cucumber/cucumber-eclipse.git
    cd cucumber-eclipse
    ```
 

@@ -30,7 +30,7 @@ This document explains the Oomph setup file and how to use it for setting up the
    - Choose "Github Projects" as the catalog
    - Enter the setup file URL or browse to a local file:
      ```
-     https://raw.githubusercontent.com/laeubi/cucumber-eclipse/main/CucumberEclipse.setup
+     https://raw.githubusercontent.com/cucumber/cucumber-eclipse/main/CucumberEclipse.setup
      ```
 
 4. **Configure and Install**
