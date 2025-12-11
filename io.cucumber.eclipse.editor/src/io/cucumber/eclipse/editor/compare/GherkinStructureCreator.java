@@ -136,7 +136,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int start = getOffset(document, bg.getLocation());
 			int end = getEndOffset(document, bg.getSteps(), document);
 			String name = bg.getName() != null && !bg.getName().isEmpty() ? bg.getName() : "Unnamed";
-			String id = "Background: " + name;
+			// Include line number to make ID unique
+			int line = bg.getLocation().getLine().intValue();
+			String id = "Background: " + name + " [line " + line + "]";
 			new GherkinNode(parent, 2, id, document, start, end - start, GherkinNode.BACKGROUND);
 
 			// Don't add steps as children for now to simplify the tree
@@ -150,7 +152,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int end = getEndOffset(document, scenario, document);
 			String name = scenario.getName() != null && !scenario.getName().isEmpty() ? scenario.getName() : "Unnamed";
 			String keyword = scenario.getKeyword() != null ? scenario.getKeyword().trim() : "Scenario";
-			String id = keyword + ": " + name;
+			// Include line number to make ID unique
+			int line = scenario.getLocation().getLine().intValue();
+			String id = keyword + ": " + name + " [line " + line + "]";
 			GherkinNode scenarioNode = new GherkinNode(parent, 3, id, document, start, end - start, 
 					GherkinNode.SCENARIO);
 
@@ -167,7 +171,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int start = getOffset(document, rule.getLocation());
 			int end = getEndOffsetForRule(document, rule, document);
 			String name = rule.getName() != null && !rule.getName().isEmpty() ? rule.getName() : "Unnamed";
-			String id = "Rule: " + name;
+			// Include line number to make ID unique
+			int line = rule.getLocation().getLine().intValue();
+			String id = "Rule: " + name + " [line " + line + "]";
 			GherkinNode ruleNode = new GherkinNode(parent, 4, id, document, start, end - start, 
 					GherkinNode.RULE);
 
@@ -189,7 +195,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int start = getOffset(document, bg.getLocation());
 			int end = getEndOffset(document, bg.getSteps(), document);
 			String name = bg.getName() != null && !bg.getName().isEmpty() ? bg.getName() : "Unnamed";
-			String id = "Background: " + name;
+			// Include line number to make ID unique
+			int line = bg.getLocation().getLine().intValue();
+			String id = "Background: " + name + " [line " + line + "]";
 			new GherkinNode(parent, 2, id, document, start, end - start, GherkinNode.BACKGROUND);
 		}
 
@@ -201,7 +209,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int end = getEndOffset(document, scenario, document);
 			String name = scenario.getName() != null && !scenario.getName().isEmpty() ? scenario.getName() : "Unnamed";
 			String keyword = scenario.getKeyword() != null ? scenario.getKeyword().trim() : "Scenario";
-			String id = keyword + ": " + name;
+			// Include line number to make ID unique
+			int line = scenario.getLocation().getLine().intValue();
+			String id = keyword + ": " + name + " [line " + line + "]";
 			GherkinNode scenarioNode = new GherkinNode(parent, 3, id, document, start, end - start, 
 					GherkinNode.SCENARIO);
 
@@ -219,7 +229,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 		int start = getOffset(document, examples.getLocation());
 		int end = getEndOffsetForExamples(document, examples, document);
 		String name = examples.getName() != null && !examples.getName().isEmpty() ? examples.getName() : "Unnamed";
-		String id = "Examples: " + name;
+		// Include line number to make ID unique
+		int line = examples.getLocation().getLine().intValue();
+		String id = "Examples: " + name + " [line " + line + "]";
 		new GherkinNode(parent, 5, id, document, start, end - start, GherkinNode.EXAMPLES);
 	}
 
