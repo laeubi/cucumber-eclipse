@@ -16,6 +16,7 @@ import org.eclipse.compare.structuremergeviewer.DocumentRangeNode;
 import org.eclipse.compare.structuremergeviewer.IStructureComparator;
 import org.eclipse.compare.structuremergeviewer.IStructureCreator;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.Document;
 import org.eclipse.jface.text.IDocument;
 
@@ -51,6 +52,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 	@Override
 	public IStructureComparator getStructure(Object input) {
 		if (!(input instanceof IStreamContentAccessor)) {
+			// Log when input type is unexpected to aid debugging
+			System.err.println("GherkinStructureCreator: Unexpected input type: " + 
+				(input != null ? input.getClass().getName() : "null"));
 			return null;
 		}
 
@@ -58,7 +62,14 @@ public class GherkinStructureCreator implements IStructureCreator {
 		try (InputStream stream = accessor.getContents()) {
 			String content = readContent(stream, accessor);
 			return createStructure(content);
+		} catch (CoreException e) {
+			System.err.println("GherkinStructureCreator: Error reading content: " + e.getMessage());
+			return null;
+		} catch (IOException e) {
+			System.err.println("GherkinStructureCreator: IO error reading content: " + e.getMessage());
+			return null;
 		} catch (Exception e) {
+			System.err.println("GherkinStructureCreator: Unexpected error: " + e.getMessage());
 			return null;
 		}
 	}
@@ -250,7 +261,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int line = location.getLine().intValue() - 1;
 			int column = location.getColumn().orElse(1L).intValue() - 1;
 			return document.getLineOffset(line) + column;
-		} catch (Exception e) {
+		} catch (BadLocationException e) {
+			System.err.println("GherkinStructureCreator: Invalid location - line: " + 
+				location.getLine() + ", column: " + location.getColumn().orElse(0L));
 			return 0;
 		}
 	}
@@ -323,7 +336,8 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int offset = document.getLineOffset(line);
 			int length = document.getLineLength(line);
 			return offset + length;
-		} catch (Exception e) {
+		} catch (BadLocationException e) {
+			System.err.println("GherkinStructureCreator: Invalid location in step: " + step.getText());
 			return content.length();
 		}
 	}
@@ -356,7 +370,8 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int offset = document.getLineOffset(line);
 			int length = document.getLineLength(line);
 			return offset + length;
-		} catch (Exception e) {
+		} catch (BadLocationException e) {
+			System.err.println("GherkinStructureCreator: Invalid location in examples");
 			return content.length();
 		}
 	}
@@ -372,7 +387,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 				int offset = document.getLineOffset(line);
 				int length = document.getLineLength(line);
 				return offset + length;
-			} catch (Exception e) {
+			} catch (BadLocationException e) {
+				System.err.println("GherkinStructureCreator: Invalid location in rule: " + 
+					(rule.getName() != null ? rule.getName() : "unnamed"));
 				return content.length();
 			}
 		}

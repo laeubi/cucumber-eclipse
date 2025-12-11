@@ -49,7 +49,13 @@ public class GherkinNode implements IStructureComparator, ITypedElement {
 		this.parent = parent;
 		this.name = name;
 		this.nodeType = nodeType;
-		this.content = content.substring(start, Math.min(start + length, content.length()));
+		// Add bounds checking to prevent StringIndexOutOfBoundsException
+		if (start >= content.length()) {
+			this.content = "";
+		} else {
+			int endPos = Math.min(start + length, content.length());
+			this.content = content.substring(start, endPos);
+		}
 		this.start = start;
 		this.length = length;
 	}
