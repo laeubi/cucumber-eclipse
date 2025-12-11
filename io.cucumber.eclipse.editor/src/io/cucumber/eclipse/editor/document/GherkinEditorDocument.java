@@ -316,6 +316,53 @@ public final class GherkinEditorDocument extends GherkinStream {
 				} catch (CoreException e) {
 				}
 			}
+			// For documents without a TextFileBuffer (e.g., in compare views),
+			// try to detect if it looks like a feature file by checking for Gherkin keywords
+			if (buffer == null && document.getLength() > 0) {
+				return looksLikeFeatureFile(document);
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Heuristic check to determine if a document looks like a feature file.
+	 * This is useful for documents that don't have a TextFileBuffer (e.g., compare views).
+	 * 
+	 * @param document the document to check
+	 * @return true if the document appears to be a feature file
+	 */
+	private static boolean looksLikeFeatureFile(IDocument document) {
+		try {
+			// Check the first few lines for common Gherkin keywords
+			int linesToCheck = Math.min(10, document.getNumberOfLines());
+			for (int i = 0; i < linesToCheck; i++) {
+				IRegion lineInfo = document.getLineInformation(i);
+				String line = document.get(lineInfo.getOffset(), lineInfo.getLength()).trim();
+				
+				// Check for language tag
+				if (line.startsWith("#") && line.contains("language:")) {
+					return true;
+				}
+				
+				// Check for common Gherkin keywords (case-insensitive for better detection)
+				String lowerLine = line.toLowerCase();
+				if (lowerLine.startsWith("feature:") || 
+					lowerLine.startsWith("scenario:") || 
+					lowerLine.startsWith("scenario outline:") ||
+					lowerLine.startsWith("given ") || 
+					lowerLine.startsWith("when ") || 
+					lowerLine.startsWith("then ") ||
+					lowerLine.startsWith("and ") ||
+					lowerLine.startsWith("but ") ||
+					lowerLine.startsWith("background:") ||
+					lowerLine.startsWith("examples:") ||
+					line.startsWith("@")) {  // Tags
+					return true;
+				}
+			}
+		} catch (BadLocationException e) {
+			// Ignore and return false
 		}
 		return false;
 	}

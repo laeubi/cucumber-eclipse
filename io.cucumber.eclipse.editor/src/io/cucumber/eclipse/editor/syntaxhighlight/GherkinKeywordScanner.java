@@ -19,6 +19,71 @@ import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
 public class GherkinKeywordScanner extends RuleBasedScanner {
 		
 	public GherkinKeywordScanner() {
+		// Initialize with default English rules for cases where we don't have a GherkinEditorDocument
+		// (e.g., in compare views before the document is fully initialized)
+		configureDefaultRules();
+	}
+
+	/**
+	 * Configure scanner with default English Gherkin keywords.
+	 * Used as fallback when GherkinEditorDocument is not available.
+	 */
+	private void configureDefaultRules() {
+		IToken keyword = new Token(new TextAttribute(GherkinColors.KEYWORD.getColor()));
+		IToken step = new Token(new TextAttribute(GherkinColors.STEP.getColor()));
+		IToken tag = new Token(new TextAttribute(GherkinColors.TAG.getColor()));
+		IToken string = new Token(new TextAttribute(GherkinColors.STRING.getColor()));
+		IToken comment = new Token(new TextAttribute(GherkinColors.COMMENT.getColor()));
+		IToken other = new Token(new TextAttribute(GherkinColors.DEFAULT.getColor()));
+		IToken numeric = new Token(new TextAttribute(GherkinColors.NUMERIC.getColor()));
+		IToken placeholder = new Token(new TextAttribute(GherkinColors.PLACEHOLDER.getColor()));
+		
+		List<IRule> rules = new ArrayList<IRule>();
+
+		// Add rule for single line comments.
+		rules.add(new EndOfLineRule("#", comment)); //$NON-NLS-1$
+
+		// Add rule for strings and character constants.
+		rules.add(new SingleLineRule("\"", "\"", string, '\\')); //$NON-NLS-2$ //$NON-NLS-1$
+		rules.add(new SingleLineRule("'", "'", string, '\\')); //$NON-NLS-2$ //$NON-NLS-1$
+
+		// Add rule for tags.
+		rules.add(new GherkinTagRule(tag));
+		
+		// Add rule for placeholders.
+		rules.add(new GherkinPlaceholderRule(placeholder));
+		
+		// Add generic whitespace rule.
+		rules.add(new WhitespaceRule(new GherkinWhitespaceDetector()));
+
+		WordRule wordRule = new WordRule(new GherkinWordDetector(), other);
+		WordRule numericRule = new WordRule(new GherkinNumericDetector(), numeric);
+		WordRule wordStarStepRule = new WordRule(new GherkinStarStepWordDetector(), step);
+		
+		// Add rule to colour the * that can be used instead of steps
+		wordStarStepRule.addWord("*", keyword);
+		
+		// Add default English Gherkin keywords
+		rules.add(new SingleLineRule("Feature:", " ", keyword));
+		rules.add(new SingleLineRule("Scenario:", " ", keyword));
+		rules.add(new SingleLineRule("Scenario Outline:", " ", keyword));
+		rules.add(new SingleLineRule("Background:", " ", keyword));
+		rules.add(new SingleLineRule("Examples:", " ", keyword));
+		rules.add(new SingleLineRule("Rule:", " ", keyword));
+		
+		rules.add(new SingleLineRule("Given ", " ", step));
+		rules.add(new SingleLineRule("When ", " ", step));
+		rules.add(new SingleLineRule("Then ", " ", step));
+		rules.add(new SingleLineRule("And ", " ", step));
+		rules.add(new SingleLineRule("But ", " ", step));
+		
+		rules.add(numericRule);
+		rules.add(wordRule);
+		rules.add(wordStarStepRule);
+		
+		IRule[] result = new IRule[rules.size()];
+		rules.toArray(result);
+		setRules(result);
 	}
 
 	public void configureRules(GherkinEditorDocument document) {
