@@ -326,6 +326,11 @@ public final class GherkinEditorDocument extends GherkinStream {
 	}
 
 	/**
+	 * Maximum number of lines to check when detecting feature files heuristically
+	 */
+	private static final int MAX_LINES_TO_CHECK_FOR_DETECTION = 10;
+
+	/**
 	 * Heuristic check to determine if a document looks like a feature file.
 	 * This is useful for documents that don't have a TextFileBuffer (e.g., compare views).
 	 * 
@@ -335,7 +340,7 @@ public final class GherkinEditorDocument extends GherkinStream {
 	private static boolean looksLikeFeatureFile(IDocument document) {
 		try {
 			// Check the first few lines for common Gherkin keywords
-			int linesToCheck = Math.min(10, document.getNumberOfLines());
+			int linesToCheck = Math.min(MAX_LINES_TO_CHECK_FOR_DETECTION, document.getNumberOfLines());
 			for (int i = 0; i < linesToCheck; i++) {
 				IRegion lineInfo = document.getLineInformation(i);
 				String line = document.get(lineInfo.getOffset(), lineInfo.getLength()).trim();
