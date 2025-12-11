@@ -1,11 +1,8 @@
 package io.cucumber.eclipse.editor.compare;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-
 import org.eclipse.compare.ITypedElement;
-import org.eclipse.compare.structuremergeviewer.IStructureComparator;
+import org.eclipse.compare.structuremergeviewer.DocumentRangeNode;
+import org.eclipse.jface.text.IDocument;
 import org.eclipse.swt.graphics.Image;
 
 /**
@@ -15,8 +12,12 @@ import org.eclipse.swt.graphics.Image;
  * Each node corresponds to a specific range in the document and has a type that determines
  * its icon and behavior in the compare view.
  * </p>
+ * <p>
+ * Extends DocumentRangeNode to properly integrate with Eclipse Compare framework for
+ * navigation and content display.
+ * </p>
  */
-public class GherkinNode implements IStructureComparator, ITypedElement {
+public class GherkinNode extends DocumentRangeNode implements ITypedElement {
 
 	// Node types
 	public static final String FEATURE_FILE = "feature-file";
@@ -27,56 +28,28 @@ public class GherkinNode implements IStructureComparator, ITypedElement {
 	public static final String STEP = "step";
 	public static final String EXAMPLES = "examples";
 
-	private final GherkinNode parent;
-	private final String name;
 	private final String nodeType;
-	private final String content;
-	private final int start;
-	private final int length;
-	private final List<GherkinNode> children = new ArrayList<>();
 
 	/**
 	 * Creates a new Gherkin node
 	 * 
-	 * @param parent   parent node (null for root)
-	 * @param name     display name
-	 * @param nodeType type of the node
-	 * @param content  full document content
-	 * @param start    start offset in document
-	 * @param length   length of the node's range
+	 * @param parent     parent node (null for root)
+	 * @param typeCode   type code for this node (used by Eclipse Compare)
+	 * @param id         unique identifier for this node
+	 * @param document   the document containing this node
+	 * @param start      start offset in document
+	 * @param length     length of the node's range
+	 * @param nodeType   the Gherkin element type (feature, scenario, etc.)
 	 */
-	public GherkinNode(GherkinNode parent, String name, String nodeType, String content, int start, int length) {
-		this.parent = parent;
-		this.name = name;
+	public GherkinNode(DocumentRangeNode parent, int typeCode, String id, IDocument document, 
+			int start, int length, String nodeType) {
+		super(parent, typeCode, id, document, start, length);
 		this.nodeType = nodeType;
-		// Add bounds checking to prevent StringIndexOutOfBoundsException
-		if (start >= content.length()) {
-			this.content = "";
-		} else {
-			int endPos = Math.min(start + length, content.length());
-			this.content = content.substring(start, endPos);
-		}
-		this.start = start;
-		this.length = length;
-	}
-
-	/**
-	 * Add a child node
-	 */
-	public void addChild(GherkinNode child) {
-		children.add(child);
-	}
-
-	/**
-	 * Get the content of this node
-	 */
-	public String getContent() {
-		return content;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return getId();
 	}
 
 	@Override
@@ -95,47 +68,5 @@ public class GherkinNode implements IStructureComparator, ITypedElement {
 	 */
 	public String getNodeType() {
 		return nodeType;
-	}
-
-	/**
-	 * Get the start offset
-	 */
-	public int getStart() {
-		return start;
-	}
-
-	/**
-	 * Get the length
-	 */
-	public int getLength() {
-		return length;
-	}
-
-	/**
-	 * Get the parent node
-	 */
-	public GherkinNode getParent() {
-		return parent;
-	}
-
-	@Override
-	public Object[] getChildren() {
-		return children.toArray();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (obj instanceof GherkinNode) {
-			GherkinNode other = (GherkinNode) obj;
-			return nodeType.equals(other.nodeType) && 
-				   name.equals(other.name) &&
-				   start == other.start;
-		}
-		return false;
-	}
-
-	@Override
-	public int hashCode() {
-		return Objects.hash(nodeType, name, start);
 	}
 }

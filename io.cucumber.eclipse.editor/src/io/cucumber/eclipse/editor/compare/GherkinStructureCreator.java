@@ -98,8 +98,9 @@ public class GherkinStructureCreator implements IStructureCreator {
 		IDocument document = new Document(content);
 		GherkinEditorDocument gherkinDoc = GherkinEditorDocument.get(document);
 
-		// Create root node
-		GherkinNode root = new GherkinNode(null, "Feature File", GherkinNode.FEATURE_FILE, content, 0, content.length());
+		// Create root node using DocumentRangeNode constructor
+		GherkinNode root = new GherkinNode(null, 0, "Feature File", document, 0, content.length(), 
+				GherkinNode.FEATURE_FILE);
 
 		Optional<Feature> featureOpt = gherkinDoc.getFeature();
 		if (!featureOpt.isPresent()) {
@@ -108,17 +109,17 @@ public class GherkinStructureCreator implements IStructureCreator {
 
 		Feature feature = featureOpt.get();
 
-		// Create feature node
+		// Create feature node with type prefix
 		int featureStart = getOffset(document, feature.getLocation());
 		int featureEnd = content.length();
-		String featureName = feature.getName() != null && !feature.getName().isEmpty() ? feature.getName() : "Feature";
-		GherkinNode featureNode = new GherkinNode(root, featureName, GherkinNode.FEATURE, 
-				content, featureStart, featureEnd - featureStart);
-		root.addChild(featureNode);
+		String featureName = feature.getName() != null && !feature.getName().isEmpty() ? feature.getName() : "Unnamed";
+		String featureId = "Feature: " + featureName;
+		GherkinNode featureNode = new GherkinNode(root, 1, featureId, document, 
+				featureStart, featureEnd - featureStart, GherkinNode.FEATURE);
 
 		// Process feature children (Background, Scenarios, Rules)
 		for (FeatureChild child : feature.getChildren()) {
-			processFeatureChild(featureNode, child, document, content);
+			processFeatureChild(featureNode, child, document);
 		}
 
 		return root;
@@ -127,22 +128,18 @@ public class GherkinStructureCreator implements IStructureCreator {
 	/**
 	 * Process a feature child element (Background, Scenario, or Rule)
 	 */
-	private void processFeatureChild(GherkinNode parent, FeatureChild child, IDocument document, String content) {
+	private void processFeatureChild(GherkinNode parent, FeatureChild child, IDocument document) {
 		// Background
 		Optional<Background> bgOpt = child.getBackground();
 		if (bgOpt.isPresent()) {
 			Background bg = bgOpt.get();
 			int start = getOffset(document, bg.getLocation());
-			int end = getEndOffset(document, bg.getSteps(), content);
-			String name = bg.getName() != null && !bg.getName().isEmpty() ? bg.getName() : "Background";
-			GherkinNode bgNode = new GherkinNode(parent, name, GherkinNode.BACKGROUND, 
-					content, start, end - start);
-			parent.addChild(bgNode);
+			int end = getEndOffset(document, bg.getSteps(), document);
+			String name = bg.getName() != null && !bg.getName().isEmpty() ? bg.getName() : "Unnamed";
+			String id = "Background: " + name;
+			new GherkinNode(parent, 2, id, document, start, end - start, GherkinNode.BACKGROUND);
 
-			// Add steps
-			for (Step step : bg.getSteps()) {
-				addStepNode(bgNode, step, document, content);
-			}
+			// Don't add steps as children for now to simplify the tree
 		}
 
 		// Scenario
@@ -150,20 +147,16 @@ public class GherkinStructureCreator implements IStructureCreator {
 		if (scenarioOpt.isPresent()) {
 			Scenario scenario = scenarioOpt.get();
 			int start = getOffset(document, scenario.getLocation());
-			int end = getEndOffset(document, scenario, content);
-			String name = scenario.getName() != null && !scenario.getName().isEmpty() ? scenario.getName() : "Scenario";
-			GherkinNode scenarioNode = new GherkinNode(parent, name, GherkinNode.SCENARIO, 
-					content, start, end - start);
-			parent.addChild(scenarioNode);
-
-			// Add steps
-			for (Step step : scenario.getSteps()) {
-				addStepNode(scenarioNode, step, document, content);
-			}
+			int end = getEndOffset(document, scenario, document);
+			String name = scenario.getName() != null && !scenario.getName().isEmpty() ? scenario.getName() : "Unnamed";
+			String keyword = scenario.getKeyword() != null ? scenario.getKeyword().trim() : "Scenario";
+			String id = keyword + ": " + name;
+			GherkinNode scenarioNode = new GherkinNode(parent, 3, id, document, start, end - start, 
+					GherkinNode.SCENARIO);
 
 			// Add examples if present
 			for (Examples examples : scenario.getExamples()) {
-				addExamplesNode(scenarioNode, examples, document, content);
+				addExamplesNode(scenarioNode, examples, document);
 			}
 		}
 
@@ -172,15 +165,15 @@ public class GherkinStructureCreator implements IStructureCreator {
 		if (ruleOpt.isPresent()) {
 			Rule rule = ruleOpt.get();
 			int start = getOffset(document, rule.getLocation());
-			int end = getEndOffsetForRule(document, rule, content);
-			String name = rule.getName() != null && !rule.getName().isEmpty() ? rule.getName() : "Rule";
-			GherkinNode ruleNode = new GherkinNode(parent, name, GherkinNode.RULE, 
-					content, start, end - start);
-			parent.addChild(ruleNode);
+			int end = getEndOffsetForRule(document, rule, document);
+			String name = rule.getName() != null && !rule.getName().isEmpty() ? rule.getName() : "Unnamed";
+			String id = "Rule: " + name;
+			GherkinNode ruleNode = new GherkinNode(parent, 4, id, document, start, end - start, 
+					GherkinNode.RULE);
 
 			// Process rule children
 			for (RuleChild ruleChild : rule.getChildren()) {
-				processRuleChild(ruleNode, ruleChild, document, content);
+				processRuleChild(ruleNode, ruleChild, document);
 			}
 		}
 	}
@@ -188,22 +181,16 @@ public class GherkinStructureCreator implements IStructureCreator {
 	/**
 	 * Process a rule child element (Background or Scenario)
 	 */
-	private void processRuleChild(GherkinNode parent, RuleChild child, IDocument document, String content) {
+	private void processRuleChild(GherkinNode parent, RuleChild child, IDocument document) {
 		// Background
 		Optional<Background> bgOpt = child.getBackground();
 		if (bgOpt.isPresent()) {
 			Background bg = bgOpt.get();
 			int start = getOffset(document, bg.getLocation());
-			int end = getEndOffset(document, bg.getSteps(), content);
-			String name = bg.getName() != null && !bg.getName().isEmpty() ? bg.getName() : "Background";
-			GherkinNode bgNode = new GherkinNode(parent, name, GherkinNode.BACKGROUND, 
-					content, start, end - start);
-			parent.addChild(bgNode);
-
-			// Add steps
-			for (Step step : bg.getSteps()) {
-				addStepNode(bgNode, step, document, content);
-			}
+			int end = getEndOffset(document, bg.getSteps(), document);
+			String name = bg.getName() != null && !bg.getName().isEmpty() ? bg.getName() : "Unnamed";
+			String id = "Background: " + name;
+			new GherkinNode(parent, 2, id, document, start, end - start, GherkinNode.BACKGROUND);
 		}
 
 		// Scenario
@@ -211,46 +198,29 @@ public class GherkinStructureCreator implements IStructureCreator {
 		if (scenarioOpt.isPresent()) {
 			Scenario scenario = scenarioOpt.get();
 			int start = getOffset(document, scenario.getLocation());
-			int end = getEndOffset(document, scenario, content);
-			String name = scenario.getName() != null && !scenario.getName().isEmpty() ? scenario.getName() : "Scenario";
-			GherkinNode scenarioNode = new GherkinNode(parent, name, GherkinNode.SCENARIO, 
-					content, start, end - start);
-			parent.addChild(scenarioNode);
-
-			// Add steps
-			for (Step step : scenario.getSteps()) {
-				addStepNode(scenarioNode, step, document, content);
-			}
+			int end = getEndOffset(document, scenario, document);
+			String name = scenario.getName() != null && !scenario.getName().isEmpty() ? scenario.getName() : "Unnamed";
+			String keyword = scenario.getKeyword() != null ? scenario.getKeyword().trim() : "Scenario";
+			String id = keyword + ": " + name;
+			GherkinNode scenarioNode = new GherkinNode(parent, 3, id, document, start, end - start, 
+					GherkinNode.SCENARIO);
 
 			// Add examples if present
 			for (Examples examples : scenario.getExamples()) {
-				addExamplesNode(scenarioNode, examples, document, content);
+				addExamplesNode(scenarioNode, examples, document);
 			}
 		}
 	}
 
 	/**
-	 * Add a step node
-	 */
-	private void addStepNode(GherkinNode parent, Step step, IDocument document, String content) {
-		int start = getOffset(document, step.getLocation());
-		int end = getEndOffsetForStep(document, step, content);
-		String stepText = step.getKeyword() + step.getText();
-		GherkinNode stepNode = new GherkinNode(parent, stepText, GherkinNode.STEP, 
-				content, start, end - start);
-		parent.addChild(stepNode);
-	}
-
-	/**
 	 * Add an examples node
 	 */
-	private void addExamplesNode(GherkinNode parent, Examples examples, IDocument document, String content) {
+	private void addExamplesNode(GherkinNode parent, Examples examples, IDocument document) {
 		int start = getOffset(document, examples.getLocation());
-		int end = getEndOffsetForExamples(document, examples, content);
-		String name = examples.getName() != null && !examples.getName().isEmpty() ? examples.getName() : "Examples";
-		GherkinNode examplesNode = new GherkinNode(parent, name, GherkinNode.EXAMPLES, 
-				content, start, end - start);
-		parent.addChild(examplesNode);
+		int end = getEndOffsetForExamples(document, examples, document);
+		String name = examples.getName() != null && !examples.getName().isEmpty() ? examples.getName() : "Unnamed";
+		String id = "Examples: " + name;
+		new GherkinNode(parent, 5, id, document, start, end - start, GherkinNode.EXAMPLES);
 	}
 
 	/**
@@ -271,27 +241,27 @@ public class GherkinStructureCreator implements IStructureCreator {
 	/**
 	 * Get end offset for a list of steps
 	 */
-	private int getEndOffset(IDocument document, List<Step> steps, String content) {
+	private int getEndOffset(IDocument document, List<Step> steps, IDocument doc) {
 		if (steps.isEmpty()) {
-			return content.length();
+			return document.getLength();
 		}
 		Step lastStep = steps.get(steps.size() - 1);
-		return getEndOffsetForStep(document, lastStep, content);
+		return getEndOffsetForStep(document, lastStep, doc);
 	}
 
 	/**
 	 * Get end offset for a scenario (including examples)
 	 */
-	private int getEndOffset(IDocument document, Scenario scenario, String content) {
+	private int getEndOffset(IDocument document, Scenario scenario, IDocument doc) {
 		List<Examples> examplesList = scenario.getExamples();
 		if (!examplesList.isEmpty()) {
 			Examples lastExample = examplesList.get(examplesList.size() - 1);
-			return getEndOffsetForExamples(document, lastExample, content);
+			return getEndOffsetForExamples(document, lastExample, doc);
 		}
 
 		List<Step> steps = scenario.getSteps();
 		if (!steps.isEmpty()) {
-			return getEndOffset(document, steps, content);
+			return getEndOffset(document, steps, doc);
 		}
 
 		// Just the scenario line
@@ -300,15 +270,16 @@ public class GherkinStructureCreator implements IStructureCreator {
 			int offset = document.getLineOffset(line);
 			int length = document.getLineLength(line);
 			return offset + length;
-		} catch (Exception e) {
-			return content.length();
+		} catch (BadLocationException e) {
+			System.err.println("GherkinStructureCreator: Invalid location in scenario: " + scenario.getName());
+			return document.getLength();
 		}
 	}
 
 	/**
 	 * Get end offset for a step
 	 */
-	private int getEndOffsetForStep(IDocument document, Step step, String content) {
+	private int getEndOffsetForStep(IDocument document, Step step, IDocument doc) {
 		try {
 			int line = step.getLocation().getLine().intValue() - 1;
 			
@@ -338,14 +309,14 @@ public class GherkinStructureCreator implements IStructureCreator {
 			return offset + length;
 		} catch (BadLocationException e) {
 			System.err.println("GherkinStructureCreator: Invalid location in step: " + step.getText());
-			return content.length();
+			return document.getLength();
 		}
 	}
 
 	/**
 	 * Get end offset for examples
 	 */
-	private int getEndOffsetForExamples(IDocument document, Examples examples, String content) {
+	private int getEndOffsetForExamples(IDocument document, Examples examples, IDocument doc) {
 		try {
 			List<TableRow> tableBody = examples.getTableBody();
 			if (!tableBody.isEmpty()) {
@@ -372,14 +343,14 @@ public class GherkinStructureCreator implements IStructureCreator {
 			return offset + length;
 		} catch (BadLocationException e) {
 			System.err.println("GherkinStructureCreator: Invalid location in examples");
-			return content.length();
+			return document.getLength();
 		}
 	}
 
 	/**
 	 * Get end offset for a rule
 	 */
-	private int getEndOffsetForRule(IDocument document, Rule rule, String content) {
+	private int getEndOffsetForRule(IDocument document, Rule rule, IDocument doc) {
 		List<RuleChild> children = rule.getChildren();
 		if (children.isEmpty()) {
 			try {
@@ -390,20 +361,20 @@ public class GherkinStructureCreator implements IStructureCreator {
 			} catch (BadLocationException e) {
 				System.err.println("GherkinStructureCreator: Invalid location in rule: " + 
 					(rule.getName() != null ? rule.getName() : "unnamed"));
-				return content.length();
+				return document.getLength();
 			}
 		}
 
 		// Find last child
 		RuleChild lastChild = children.get(children.size() - 1);
 		if (lastChild.getScenario().isPresent()) {
-			return getEndOffset(document, lastChild.getScenario().get(), content);
+			return getEndOffset(document, lastChild.getScenario().get(), doc);
 		} else if (lastChild.getBackground().isPresent()) {
 			Background bg = lastChild.getBackground().get();
-			return getEndOffset(document, bg.getSteps(), content);
+			return getEndOffset(document, bg.getSteps(), doc);
 		}
 
-		return content.length();
+		return document.getLength();
 	}
 
 	@Override
@@ -416,11 +387,20 @@ public class GherkinStructureCreator implements IStructureCreator {
 	public String getContents(Object node, boolean ignoreWhitespace) {
 		if (node instanceof GherkinNode) {
 			GherkinNode gherkinNode = (GherkinNode) node;
-			String content = gherkinNode.getContent();
-			if (ignoreWhitespace) {
-				return content.trim();
+			try {
+				IDocument doc = gherkinNode.getDocument();
+				if (doc != null) {
+					int start = gherkinNode.getRange().getOffset();
+					int length = gherkinNode.getRange().getLength();
+					String content = doc.get(start, length);
+					if (ignoreWhitespace) {
+						return content.trim();
+					}
+					return content;
+				}
+			} catch (Exception e) {
+				System.err.println("GherkinStructureCreator: Error getting contents: " + e.getMessage());
 			}
-			return content;
 		}
 		return "";
 	}
