@@ -1,9 +1,11 @@
-package io.cucumber.eclipse.editor.builder;
+package io.cucumber.eclipse.java.builder;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.viewers.ISelection;
@@ -32,12 +34,39 @@ public class AddCucumberBuilderHandler extends AbstractHandler {
 
 			if (project != null) {
 				try {
-					CucumberFeatureNature.addNature(project);
+					addBuilder(project);
 				} catch (CoreException e) {
 					throw new ExecutionException("Failed to add Cucumber builder", e);
 				}
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Adds the Cucumber builder to the given project.
+	 * 
+	 * @param project the project to add the builder to
+	 * @throws CoreException if the builder could not be added
+	 */
+	public static void addBuilder(IProject project) throws CoreException {
+		IProjectDescription desc = project.getDescription();
+		ICommand[] commands = desc.getBuildSpec();
+
+		// Check if builder is already present
+		for (int i = 0; i < commands.length; ++i) {
+			if (commands[i].getBuilderName().equals(CucumberFeatureBuilder.BUILDER_ID)) {
+				return; // Already configured
+			}
+		}
+
+		// Add builder to project
+		ICommand[] newCommands = new ICommand[commands.length + 1];
+		System.arraycopy(commands, 0, newCommands, 0, commands.length);
+		ICommand command = desc.newCommand();
+		command.setBuilderName(CucumberFeatureBuilder.BUILDER_ID);
+		newCommands[newCommands.length - 1] = command;
+		desc.setBuildSpec(newCommands);
+		project.setDescription(desc, null);
 	}
 }

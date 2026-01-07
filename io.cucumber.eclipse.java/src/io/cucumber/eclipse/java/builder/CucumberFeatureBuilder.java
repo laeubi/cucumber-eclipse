@@ -1,4 +1,4 @@
-package io.cucumber.eclipse.editor.builder;
+package io.cucumber.eclipse.java.builder;
 
 import java.util.Map;
 
@@ -15,7 +15,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
 import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
-import io.cucumber.eclipse.editor.validation.ICucumberGlueValidator;
+import io.cucumber.eclipse.java.validation.CucumberGlueValidator;
 
 /**
  * Builder for validating Cucumber feature files in a project.
@@ -29,7 +29,7 @@ import io.cucumber.eclipse.editor.validation.ICucumberGlueValidator;
  */
 public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 
-	public static final String BUILDER_ID = "io.cucumber.eclipse.editor.cucumberFeatureBuilder";
+	public static final String BUILDER_ID = "io.cucumber.eclipse.java.cucumberFeatureBuilder";
 
 	@Override
 	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
@@ -76,8 +76,8 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 		try {
 			GherkinEditorDocument document = GherkinEditorDocument.get(file);
 			if (document != null) {
-				// Trigger validation using the appropriate validator
-				ICucumberGlueValidator.validate(document);
+				// Trigger validation using CucumberGlueValidator
+				CucumberGlueValidator.validate(document);
 			}
 		} catch (OperationCanceledException e) {
 			throw e; // Re-throw cancellation
