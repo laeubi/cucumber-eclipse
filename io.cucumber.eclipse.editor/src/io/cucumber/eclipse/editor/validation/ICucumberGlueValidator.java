@@ -3,7 +3,6 @@ package io.cucumber.eclipse.editor.validation;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.jobs.Job;
 
-import io.cucumber.eclipse.editor.Activator;
 import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
 
 /**
