@@ -1,7 +1,9 @@
 package io.cucumber.eclipse.editor.validation;
 
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.jobs.Job;
 
+import io.cucumber.eclipse.editor.Activator;
 import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
 
 /**
@@ -16,6 +18,11 @@ import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
  * @author cucumber-eclipse
  */
 public interface ICucumberGlueValidator {
+
+	/**
+	 * Fully qualified class name of the Java backend validator.
+	 */
+	String JAVA_VALIDATOR_CLASS = "io.cucumber.eclipse.java.validation.CucumberGlueValidator";
 
 	/**
 	 * Validates the given Gherkin editor document and returns a Job that performs
@@ -46,11 +53,24 @@ public interface ICucumberGlueValidator {
 		// For now, we'll use reflection to call the Java validator if available
 		// In the future, this could use OSGi service discovery
 		try {
-			Class<?> validatorClass = Class.forName("io.cucumber.eclipse.java.validation.CucumberGlueValidator");
+			Class<?> validatorClass = Class.forName(JAVA_VALIDATOR_CLASS);
 			java.lang.reflect.Method method = validatorClass.getMethod("validate", GherkinEditorDocument.class);
 			return (Job) method.invoke(null, editorDocument);
-		} catch (Exception e) {
-			// Validator not available or error occurred
+		} catch (ClassNotFoundException e) {
+			// Validator not available (Java backend not installed)
+			ILog.get().info("Java validator not available: " + JAVA_VALIDATOR_CLASS);
+			return null;
+		} catch (NoSuchMethodException e) {
+			// Method signature changed
+			ILog.get().error("Validator method not found", e);
+			return null;
+		} catch (java.lang.reflect.InvocationTargetException e) {
+			// Error during validation
+			ILog.get().error("Error invoking validator", e.getCause());
+			return null;
+		} catch (IllegalAccessException e) {
+			// Security or access issue
+			ILog.get().error("Cannot access validator", e);
 			return null;
 		}
 	}

@@ -10,6 +10,7 @@ import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
 
@@ -78,9 +79,11 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 				// Trigger validation using the appropriate validator
 				ICucumberGlueValidator.validate(document);
 			}
+		} catch (OperationCanceledException e) {
+			throw e; // Re-throw cancellation
 		} catch (Exception e) {
 			// Log but don't fail the build
-			e.printStackTrace();
+			ILog.get().error("Failed to validate feature file: " + file.getFullPath(), e);
 		}
 	}
 
