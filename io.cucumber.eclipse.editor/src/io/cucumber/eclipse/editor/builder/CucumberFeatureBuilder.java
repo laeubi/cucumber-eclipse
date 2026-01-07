@@ -28,7 +28,7 @@ import io.cucumber.eclipse.editor.validation.ICucumberGlueValidator;
  */
 public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 
-	public static final String BUILDER_ID = "io.cucumber.eclipse.editor.builder.cucumberFeatureBuilder";
+	public static final String BUILDER_ID = "io.cucumber.eclipse.editor.cucumberFeatureBuilder";
 
 	@Override
 	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
