@@ -60,7 +60,7 @@ final class GlueJob extends Job {
 	private Supplier<GherkinEditorDocument> documentSupplier;
 
 	GlueJob(GlueJob oldJob, Supplier<GherkinEditorDocument> documentSupplier) {
-		super("Verify Cucumber Glue Code");
+		super(createJobName(documentSupplier));
 		this.oldJob = oldJob;
 		this.documentSupplier = documentSupplier;
 		if (oldJob != null) {
@@ -70,6 +70,18 @@ final class GlueJob extends Job {
 			this.matchedSteps = Collections.emptySet();
 			this.parsedSteps = Collections.emptySet();
 		}
+	}
+
+	private static String createJobName(Supplier<GherkinEditorDocument> documentSupplier) {
+		try {
+			GherkinEditorDocument doc = documentSupplier.get();
+			if (doc != null && doc.getResource() != null) {
+				return "Verify Cucumber Glue Code (" + doc.getResource().getName() + ")";
+			}
+		} catch (Exception e) {
+			// Ignore, use default name
+		}
+		return "Verify Cucumber Glue Code";
 	}
 
 	@Override

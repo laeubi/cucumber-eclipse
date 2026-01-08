@@ -2,6 +2,7 @@ package io.cucumber.eclipse.java.validation;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -11,6 +12,8 @@ import org.eclipse.core.filebuffers.IDocumentSetupParticipant;
 import org.eclipse.core.filebuffers.IFileBuffer;
 import org.eclipse.core.filebuffers.IFileBufferListener;
 import org.eclipse.core.filebuffers.ITextFileBuffer;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.OperationCanceledException;
@@ -34,6 +37,7 @@ import io.cucumber.eclipse.java.plugins.MatchedStep;
 public class CucumberGlueValidator implements IDocumentSetupParticipant {
 
 	private static ConcurrentMap<IDocument, GlueJob> jobMap = new ConcurrentHashMap<>();
+	private static ConcurrentMap<IProject, ProjectGlueJob> projectJobMap = new ConcurrentHashMap<>();
 
 	static {
 		// TODO implement generic DocumentCache class
@@ -194,6 +198,60 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 			});
 			verificationJob.setUser(false);
 			verificationJob.setPriority(Job.DECORATE);
+			verificationJob.schedule();
+			return verificationJob;
+		});
+	}
+
+	/**
+	 * Validates all feature files in a project at once. This is more efficient
+	 * than validating files individually as it only sets up the Cucumber runtime
+	 * once and processes all features together. Any running validation jobs for
+	 * individual files in this project will be canceled.
+	 * 
+	 * @param project      the project containing the feature files
+	 * @param featureFiles the list of feature files to validate
+	 * @param monitor      progress monitor for cancellation
+	 * @return the job triggered for the validation
+	 */
+	public static Job validateProject(IProject project, List<IFile> featureFiles, IProgressMonitor monitor) {
+		return projectJobMap.compute(project, (key, oldJob) -> {
+			if (oldJob != null) {
+				oldJob.cancel();
+			}
+			
+			// Cancel any individual file validation jobs for files in this project
+			for (IFile file : featureFiles) {
+				GherkinEditorDocument doc = GherkinEditorDocument.get(file);
+				if (doc != null) {
+					GlueJob fileJob = jobMap.get(doc.getDocument());
+					if (fileJob != null) {
+						fileJob.cancel();
+						fileJob.disposeListener();
+					}
+				}
+			}
+			
+			ProjectGlueJob verificationJob = new ProjectGlueJob(oldJob, project, featureFiles);
+			verificationJob.addJobChangeListener(new IJobChangeListener() {
+				@Override
+				public void done(IJobChangeEvent event) {
+					projectJobMap.remove(project, verificationJob);
+				}
+
+				@Override
+				public void sleeping(IJobChangeEvent event) {}
+				@Override
+				public void scheduled(IJobChangeEvent event) {}
+				@Override
+				public void running(IJobChangeEvent event) {}
+				@Override
+				public void awake(IJobChangeEvent event) {}
+				@Override
+				public void aboutToRun(IJobChangeEvent event) {}
+			});
+			verificationJob.setUser(false);
+			verificationJob.setPriority(Job.BUILD);
 			verificationJob.schedule();
 			return verificationJob;
 		});

@@ -1,5 +1,7 @@
 package io.cucumber.eclipse.java.builder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.ICommand;
@@ -12,9 +14,7 @@ import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.ILog;
 import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.OperationCanceledException;
 
-import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
 import io.cucumber.eclipse.java.validation.CucumberGlueValidator;
 
 /**
@@ -36,57 +36,37 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
 		// Always do a full build since glue code changes (Java/class files) 
 		// can affect validation and it's non-trivial to detect if glue is affected
-		getProject().accept(new FeatureFileVisitor(monitor));
+		
+		// Collect all feature files in the project
+		List<IFile> featureFiles = new ArrayList<>();
+		getProject().accept(new IResourceVisitor() {
+			@Override
+			public boolean visit(IResource resource) throws CoreException {
+				if (resource instanceof IFile) {
+					IFile file = (IFile) resource;
+					if ("feature".equals(file.getFileExtension())) {
+						featureFiles.add(file);
+					}
+				}
+				return true;
+			}
+		});
+		
+		// Validate all features at once if there are any
+		if (!featureFiles.isEmpty()) {
+			try {
+				CucumberGlueValidator.validateProject(getProject(), featureFiles, monitor);
+			} catch (Exception e) {
+				ILog.get().error("Failed to validate project: " + getProject().getName(), e);
+			}
+		}
+		
 		return null;
 	}
 
 	@Override
 	protected void clean(IProgressMonitor monitor) throws CoreException {
 		// Clean is handled by marker deletion which is automatic when resources are cleaned
-	}
-
-	/**
-	 * Validates a single feature file.
-	 */
-	private void validateFeatureFile(IFile file, IProgressMonitor monitor) {
-		if (monitor.isCanceled()) {
-			throw new OperationCanceledException();
-		}
-
-		try {
-			GherkinEditorDocument document = GherkinEditorDocument.get(file);
-			if (document != null) {
-				// Trigger validation using CucumberGlueValidator
-				CucumberGlueValidator.validate(document);
-			}
-		} catch (OperationCanceledException e) {
-			throw e; // Re-throw cancellation
-		} catch (Exception e) {
-			// Log but don't fail the build
-			ILog.get().error("Failed to validate feature file: " + file.getFullPath(), e);
-		}
-	}
-
-	/**
-	 * Resource visitor for full builds.
-	 */
-	private class FeatureFileVisitor implements IResourceVisitor {
-		private final IProgressMonitor monitor;
-
-		public FeatureFileVisitor(IProgressMonitor monitor) {
-			this.monitor = monitor;
-		}
-
-		@Override
-		public boolean visit(IResource resource) throws CoreException {
-			if (resource instanceof IFile) {
-				IFile file = (IFile) resource;
-				if ("feature".equals(file.getFileExtension())) {
-					validateFeatureFile(file, monitor);
-				}
-			}
-			return true; // Continue visiting
-		}
 	}
 
 	/**
