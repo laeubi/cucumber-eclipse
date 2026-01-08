@@ -36,7 +36,7 @@ import io.cucumber.eclipse.java.plugins.MatchedStep;
  */
 public class CucumberGlueValidator implements IDocumentSetupParticipant {
 
-	private static ConcurrentMap<IDocument, GlueJob> jobMap = new ConcurrentHashMap<>();
+	private static ConcurrentMap<IDocument, FeatureGlueJob> jobMap = new ConcurrentHashMap<>();
 	private static ConcurrentMap<IProject, ProjectGlueJob> projectJobMap = new ConcurrentHashMap<>();
 
 	static {
@@ -76,7 +76,7 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 			public void bufferDisposed(IFileBuffer buffer) {
 				if (buffer instanceof ITextFileBuffer) {
 					IDocument document = ((ITextFileBuffer) buffer).getDocument();
-					GlueJob remove = jobMap.remove(document);
+					FeatureGlueJob remove = jobMap.remove(document);
 					if (remove != null) {
 						remove.cancel();
 						remove.disposeListener();
@@ -131,7 +131,7 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 				oldJob.cancel();
 				oldJob.disposeListener();
 			}
-			GlueJob verificationJob = new GlueJob(oldJob, () -> GherkinEditorDocument.get(document));
+			FeatureGlueJob verificationJob = new FeatureGlueJob(oldJob, () -> GherkinEditorDocument.get(document));
 			verificationJob.setUser(false);
 			verificationJob.setPriority(Job.DECORATE);
 			if (delay > 0) {
@@ -158,7 +158,7 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 				oldJob.cancel();
 				oldJob.disposeListener();
 			}
-			GlueJob verificationJob = new GlueJob(oldJob, () -> editorDocument);
+			FeatureGlueJob verificationJob = new FeatureGlueJob(oldJob, () -> editorDocument);
 			verificationJob.addJobChangeListener(new IJobChangeListener() {
 
 				@Override
@@ -224,7 +224,7 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 			for (IFile file : featureFiles) {
 				GherkinEditorDocument doc = GherkinEditorDocument.get(file);
 				if (doc != null) {
-					GlueJob fileJob = jobMap.get(doc.getDocument());
+					FeatureGlueJob fileJob = jobMap.get(doc.getDocument());
 					if (fileJob != null) {
 						fileJob.cancel();
 						fileJob.disposeListener();
@@ -268,9 +268,9 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 	 * @throws InterruptedException       if the thread was interrupted while
 	 *                                    waiting
 	 */
-	private static GlueJob sync(IDocument document, IProgressMonitor monitor)
+	private static FeatureGlueJob sync(IDocument document, IProgressMonitor monitor)
 			throws OperationCanceledException, InterruptedException {
-		GlueJob glueJob = jobMap.get(document);
+		FeatureGlueJob glueJob = jobMap.get(document);
 		if (glueJob != null) {
 			glueJob.join(TimeUnit.SECONDS.toMillis(30), monitor);
 		}
@@ -280,7 +280,7 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 	public static Collection<MatchedStep<?>> getMatchedSteps(IDocument document, IProgressMonitor monitor)
 			throws OperationCanceledException, InterruptedException {
 		if (document != null) {
-			GlueJob job = sync(document, monitor);
+			FeatureGlueJob job = sync(document, monitor);
 			if (job != null) {
 				return job.matchedSteps;
 			}
@@ -291,7 +291,7 @@ public class CucumberGlueValidator implements IDocumentSetupParticipant {
 	public static Collection<CucumberStepDefinition> getAvaiableSteps(IDocument document, IProgressMonitor monitor)
 			throws OperationCanceledException, InterruptedException {
 		if (document != null) {
-			GlueJob job = sync(document, monitor);
+			FeatureGlueJob job = sync(document, monitor);
 			if (job != null) {
 				return job.parsedSteps;
 			}
