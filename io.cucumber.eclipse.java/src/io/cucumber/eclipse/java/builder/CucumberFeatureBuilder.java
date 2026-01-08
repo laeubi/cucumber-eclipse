@@ -36,20 +36,13 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
 		// Always do a full build since glue code changes (Java/class files) 
 		// can affect validation and it's non-trivial to detect if glue is affected
-		fullBuild(monitor);
+		getProject().accept(new FeatureFileVisitor(monitor));
 		return null;
 	}
 
 	@Override
 	protected void clean(IProgressMonitor monitor) throws CoreException {
 		// Clean is handled by marker deletion which is automatic when resources are cleaned
-	}
-
-	/**
-	 * Performs a full build of all feature files in the project.
-	 */
-	private void fullBuild(IProgressMonitor monitor) throws CoreException {
-		getProject().accept(new FeatureFileVisitor(monitor));
 	}
 
 	/**
@@ -150,5 +143,29 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 				return;
 			}
 		}
+	}
+
+	/**
+	 * Checks if the given project has the Cucumber builder.
+	 * 
+	 * @param project the project to check
+	 * @return true if the project has the builder, false otherwise
+	 */
+	public static boolean hasBuilder(IProject project) {
+		if (!project.isOpen()) {
+			return false;
+		}
+		try {
+			IProjectDescription description = project.getDescription();
+			ICommand[] commands = description.getBuildSpec();
+			for (int i = 0; i < commands.length; ++i) {
+				if (commands[i].getBuilderName().equals(BUILDER_ID)) {
+					return true;
+				}
+			}
+		} catch (CoreException e) {
+			// Ignore
+		}
+		return false;
 	}
 }
