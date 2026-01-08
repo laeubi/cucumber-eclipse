@@ -2,11 +2,11 @@ package io.cucumber.eclipse.java.builder;
 
 import java.util.Map;
 
+import org.eclipse.core.resources.ICommand;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
+import org.eclipse.core.resources.IProjectDescription;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.resources.IResourceDelta;
-import org.eclipse.core.resources.IResourceDeltaVisitor;
 import org.eclipse.core.resources.IResourceVisitor;
 import org.eclipse.core.resources.IncrementalProjectBuilder;
 import org.eclipse.core.runtime.CoreException;
@@ -22,7 +22,8 @@ import io.cucumber.eclipse.java.validation.CucumberGlueValidator;
  * <p>
  * This builder processes all .feature files in the project and triggers
  * validation to update markers for unmatched steps and other glue code issues.
- * It supports both full and incremental builds.
+ * Since glue code (Java files, class files) can change and affect validation,
+ * this builder always performs a full build rather than incremental builds.
  * </p>
  * 
  * @author cucumber-eclipse
@@ -33,16 +34,9 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 
 	@Override
 	protected IProject[] build(int kind, Map<String, String> args, IProgressMonitor monitor) throws CoreException {
-		if (kind == FULL_BUILD) {
-			fullBuild(monitor);
-		} else {
-			IResourceDelta delta = getDelta(getProject());
-			if (delta == null) {
-				fullBuild(monitor);
-			} else {
-				incrementalBuild(delta, monitor);
-			}
-		}
+		// Always do a full build since glue code changes (Java/class files) 
+		// can affect validation and it's non-trivial to detect if glue is affected
+		fullBuild(monitor);
 		return null;
 	}
 
@@ -56,13 +50,6 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 	 */
 	private void fullBuild(IProgressMonitor monitor) throws CoreException {
 		getProject().accept(new FeatureFileVisitor(monitor));
-	}
-
-	/**
-	 * Performs an incremental build based on resource delta.
-	 */
-	private void incrementalBuild(IResourceDelta delta, IProgressMonitor monitor) throws CoreException {
-		delta.accept(new FeatureDeltaVisitor(monitor));
 	}
 
 	/**
@@ -110,33 +97,58 @@ public class CucumberFeatureBuilder extends IncrementalProjectBuilder {
 	}
 
 	/**
-	 * Delta visitor for incremental builds.
+	 * Adds the Cucumber builder to the given project.
+	 * 
+	 * @param project the project to add the builder to
+	 * @throws CoreException if the builder could not be added
 	 */
-	private class FeatureDeltaVisitor implements IResourceDeltaVisitor {
-		private final IProgressMonitor monitor;
+	public static void addBuilder(IProject project) throws CoreException {
+		if (!project.isOpen()) {
+			return;
+		}
+		
+		IProjectDescription desc = project.getDescription();
+		ICommand[] commands = desc.getBuildSpec();
 
-		public FeatureDeltaVisitor(IProgressMonitor monitor) {
-			this.monitor = monitor;
+		// Check if builder is already present
+		for (int i = 0; i < commands.length; ++i) {
+			if (commands[i].getBuilderName().equals(BUILDER_ID)) {
+				return; // Already configured
+			}
 		}
 
-		@Override
-		public boolean visit(IResourceDelta delta) throws CoreException {
-			IResource resource = delta.getResource();
-			switch (delta.getKind()) {
-			case IResourceDelta.ADDED:
-			case IResourceDelta.CHANGED:
-				if (resource instanceof IFile) {
-					IFile file = (IFile) resource;
-					if ("feature".equals(file.getFileExtension())) {
-						validateFeatureFile(file, monitor);
-					}
-				}
-				break;
-			case IResourceDelta.REMOVED:
-				// Markers are automatically removed when resource is deleted
-				break;
+		// Add builder to project
+		ICommand[] newCommands = new ICommand[commands.length + 1];
+		System.arraycopy(commands, 0, newCommands, 0, commands.length);
+		ICommand command = desc.newCommand();
+		command.setBuilderName(BUILDER_ID);
+		newCommands[newCommands.length - 1] = command;
+		desc.setBuildSpec(newCommands);
+		project.setDescription(desc, null);
+	}
+
+	/**
+	 * Removes the Cucumber builder from the given project.
+	 * 
+	 * @param project the project to remove the builder from
+	 * @throws CoreException if the builder could not be removed
+	 */
+	public static void removeBuilder(IProject project) throws CoreException {
+		if (!project.isOpen()) {
+			return;
+		}
+		
+		IProjectDescription description = project.getDescription();
+		ICommand[] commands = description.getBuildSpec();
+		for (int i = 0; i < commands.length; ++i) {
+			if (commands[i].getBuilderName().equals(BUILDER_ID)) {
+				ICommand[] newCommands = new ICommand[commands.length - 1];
+				System.arraycopy(commands, 0, newCommands, 0, i);
+				System.arraycopy(commands, i + 1, newCommands, i, commands.length - i - 1);
+				description.setBuildSpec(newCommands);
+				project.setDescription(description, null);
+				return;
 			}
-			return true; // Continue visiting
 		}
 	}
 }

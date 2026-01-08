@@ -34,39 +34,12 @@ public class AddCucumberBuilderHandler extends AbstractHandler {
 
 			if (project != null) {
 				try {
-					addBuilder(project);
+					CucumberFeatureBuilder.addBuilder(project);
 				} catch (CoreException e) {
 					throw new ExecutionException("Failed to add Cucumber builder", e);
 				}
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Adds the Cucumber builder to the given project.
-	 * 
-	 * @param project the project to add the builder to
-	 * @throws CoreException if the builder could not be added
-	 */
-	public static void addBuilder(IProject project) throws CoreException {
-		IProjectDescription desc = project.getDescription();
-		ICommand[] commands = desc.getBuildSpec();
-
-		// Check if builder is already present
-		for (int i = 0; i < commands.length; ++i) {
-			if (commands[i].getBuilderName().equals(CucumberFeatureBuilder.BUILDER_ID)) {
-				return; // Already configured
-			}
-		}
-
-		// Add builder to project
-		ICommand[] newCommands = new ICommand[commands.length + 1];
-		System.arraycopy(commands, 0, newCommands, 0, commands.length);
-		ICommand command = desc.newCommand();
-		command.setBuilderName(CucumberFeatureBuilder.BUILDER_ID);
-		newCommands[newCommands.length - 1] = command;
-		desc.setBuildSpec(newCommands);
-		project.setDescription(desc, null);
 	}
 }

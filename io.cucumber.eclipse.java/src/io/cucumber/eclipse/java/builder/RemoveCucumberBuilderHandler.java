@@ -34,33 +34,12 @@ public class RemoveCucumberBuilderHandler extends AbstractHandler {
 
 			if (project != null) {
 				try {
-					removeBuilder(project);
+					CucumberFeatureBuilder.removeBuilder(project);
 				} catch (CoreException e) {
 					throw new ExecutionException("Failed to remove Cucumber builder", e);
 				}
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Removes the Cucumber builder from the given project.
-	 * 
-	 * @param project the project to remove the builder from
-	 * @throws CoreException if the builder could not be removed
-	 */
-	public static void removeBuilder(IProject project) throws CoreException {
-		IProjectDescription description = project.getDescription();
-		ICommand[] commands = description.getBuildSpec();
-		for (int i = 0; i < commands.length; ++i) {
-			if (commands[i].getBuilderName().equals(CucumberFeatureBuilder.BUILDER_ID)) {
-				ICommand[] newCommands = new ICommand[commands.length - 1];
-				System.arraycopy(commands, 0, newCommands, 0, i);
-				System.arraycopy(commands, i + 1, newCommands, i, commands.length - i - 1);
-				description.setBuildSpec(newCommands);
-				project.setDescription(description, null);
-				return;
-			}
-		}
 	}
 }
