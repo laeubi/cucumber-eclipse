@@ -16,13 +16,7 @@ import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jface.preference.IPreferenceStore;
-import org.eclipse.jface.util.IPropertyChangeListener;
-import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.osgi.service.debug.DebugTrace;
 
 import io.cucumber.core.eventbus.IncrementingUuidGenerator;
@@ -52,7 +46,6 @@ import io.cucumber.plugin.Plugin;
 abstract class AbstractGlueJob<T extends AbstractGlueJob<T>> extends Job {
 
 	private T oldJob;
-	protected Runnable listenerRegistration;
 
 	protected AbstractGlueJob(String name, T oldJob) {
 		super(name);
@@ -75,18 +68,7 @@ abstract class AbstractGlueJob<T extends AbstractGlueJob<T>> extends Job {
 
 	@Override
 	protected void canceling() {
-		disposeListener();
-	}
-
-	protected void disposeListener() {
-		synchronized (this) {
-			if (listenerRegistration != null) {
-				listenerRegistration.run();
-				listenerRegistration = () -> {
-					// dummy to prevent further registration...
-				};
-			}
-		}
+		// Nothing to do on cancel
 	}
 
 	@Override

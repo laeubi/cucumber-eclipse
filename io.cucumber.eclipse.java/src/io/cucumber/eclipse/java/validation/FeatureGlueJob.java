@@ -10,15 +10,9 @@ import java.util.function.Supplier;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.IPreferenceChangeListener;
-import org.eclipse.core.runtime.preferences.IEclipsePreferences.PreferenceChangeEvent;
-import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.BadLocationException;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.text.IRegion;
-import org.eclipse.jface.util.IPropertyChangeListener;
-import org.eclipse.jface.util.PropertyChangeEvent;
 
 import io.cucumber.eclipse.editor.document.GherkinEditorDocument;
 import io.cucumber.eclipse.java.plugins.CucumberStepDefinition;
@@ -35,20 +29,11 @@ import io.cucumber.plugin.Plugin;
  */
 final class FeatureGlueJob extends AbstractGlueJob<FeatureGlueJob> {
 
-	volatile Collection<MatchedStep<?>> matchedSteps;
-	volatile Collection<CucumberStepDefinition> parsedSteps;
 	private Supplier<GherkinEditorDocument> documentSupplier;
 
 	FeatureGlueJob(FeatureGlueJob oldJob, Supplier<GherkinEditorDocument> documentSupplier) {
 		super(createJobName(documentSupplier), oldJob);
 		this.documentSupplier = documentSupplier;
-		if (oldJob != null) {
-			this.matchedSteps = oldJob.matchedSteps;
-			this.parsedSteps = oldJob.parsedSteps;
-		} else {
-			this.matchedSteps = Collections.emptySet();
-			this.parsedSteps = Collections.emptySet();
-		}
 	}
 
 	private static String createJobName(Supplier<GherkinEditorDocument> documentSupplier) {
@@ -83,8 +68,11 @@ final class FeatureGlueJob extends AbstractGlueJob<FeatureGlueJob> {
 	@Override
 	protected void onValidationSuccess(Collection<MatchedStep<?>> matchedSteps,
 			Collection<CucumberStepDefinition> parsedSteps) {
-		this.matchedSteps = Collections.unmodifiableCollection(matchedSteps);
-		this.parsedSteps = Collections.unmodifiableCollection(parsedSteps);
+		// Update state in CucumberGlueValidator
+		GherkinEditorDocument doc = documentSupplier.get();
+		if (doc != null) {
+			CucumberGlueValidator.updateState(doc.getDocument(), matchedSteps, parsedSteps);
+		}
 	}
 
 	@Override
@@ -120,36 +108,7 @@ final class FeatureGlueJob extends AbstractGlueJob<FeatureGlueJob> {
 
 	@Override
 	protected void registerPreferenceListeners(CucumberJavaPreferences projectProperties) {
-		GherkinEditorDocument doc = documentSupplier.get();
-		if (doc != null && doc.getResource() != null) {
-			synchronized (this) {
-				if (listenerRegistration == null) {
-					IEclipsePreferences node = projectProperties.node();
-					List<Runnable> list = new ArrayList<>();
-					if (node != null) {
-						IPreferenceChangeListener listener = new IPreferenceChangeListener() {
-							@Override
-							public void preferenceChange(PreferenceChangeEvent event) {
-								schedule();
-							}
-						};
-						node.addPreferenceChangeListener(listener);
-						list.add(() -> node.removePreferenceChangeListener(listener));
-					}
-					IPreferenceStore store = projectProperties.store();
-					if (store != null) {
-						IPropertyChangeListener propertyChangeListener = new IPropertyChangeListener() {
-							@Override
-							public void propertyChange(PropertyChangeEvent event) {
-								schedule();
-							}
-						};
-						store.addPropertyChangeListener(propertyChangeListener);
-						list.add(() -> store.removePropertyChangeListener(propertyChangeListener));
-					}
-					listenerRegistration = () -> list.forEach(Runnable::run);
-				}
-			}
-		}
+		// Preference listening is now handled globally by CucumberGlueValidator
+		// No need for per-job listeners
 	}
 }
